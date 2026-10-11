@@ -58,7 +58,7 @@ class CloudJob:
             if conditional_failed(exc):
                 return False
             raise
-        self.sns.publish(TopicArn=self.topic, Subject="Cleaning invoice status", Message=json.dumps(payload))
+        self.sns.publish(TopicArn=self.topic, Subject="Casual Services invoice status", Message=json.dumps(payload))
         self.patch(f"event#{event_key}", {"status": "published"})
         return True
 
@@ -77,7 +77,7 @@ class CloudJob:
             pdf = generate_pdf(config, charges, int(row["number"]), local_date(now, config["timezone"]), directory / filename)
             msg = message(config, year, month, charges, pdf)
             msg["X-Cleaning-Invoice-Operation"] = operation_id
-            msg["Message-ID"] = f"<{operation_id}@cleaning-invoice.local>"
+            msg["Message-ID"] = f"<{operation_id}@casual-invoice.local>"
             prefix = f"invoices/{key}/{operation_id}"
             pdf_key, mime_key = f"{prefix}/{filename}", f"{prefix}/draft.eml"
             self.s3.put_object(Bucket=self.bucket, Key=pdf_key, Body=pdf.read_bytes(), ServerSideEncryption="AES256")

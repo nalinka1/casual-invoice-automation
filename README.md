@@ -6,13 +6,13 @@ Deterministic Python 3.12+ billing for two service sites: regional business-day 
 
 Create a virtual environment and install `pip install -e ".[test,gmail,aws]"`. Run `python -m pytest`. Tests generate a synthetic invoice and load `config.example.json`; no private files or network access are required. On restricted Windows environments use `-p no:cacheprovider --basetemp output/pytest-<unique-run-id>`.
 
-Copy `config.example.json` to the ignored `config.json`, supply your own private PDF and settings, and run `cleaning-invoice` for a local preview. Invoice numbers in previews are unreserved. Use `cleaning-invoice-gmail connect` and then `cleaning-invoice-gmail draft` for explicit Gmail draft creation. Sending is always manual.
+Copy `config.example.json` to the ignored `config.json`, supply your own private PDF and settings, and run `casual-invoice` for a local preview. Invoice numbers in previews are unreserved. Use `casual-invoice-gmail connect` and then `casual-invoice-gmail draft` for explicit Gmail draft creation. Sending is always manual.
 
 ## Architecture
 
-See the [advanced architecture and developer review](docs/ARCHITECTURE.md) for system diagrams, execution and state models, security boundaries, performance measurement plans, and a prioritized review backlog. The professional project name is used in documentation; existing package and command names remain compatible.
+See the [advanced architecture and developer review](docs/ARCHITECTURE.md) for system diagrams, execution and state models, security boundaries, performance measurement plans, and a prioritized review backlog. The package and commands use casual services naming; see [rename and deployment notes](docs/RENAMING.md) before updating an existing installation.
 
-`src/cleaning_invoice` separates configuration validation, calendar resolution, PDF generation, email composition, SQLite state, Gmail OAuth and private AWS storage. `Decimal` handles currency and `zoneinfo` handles Melbourne dates. Site overrides win over global overrides. Unknown calendar years fail closed. Regional holiday configuration replaces Melbourne Cup with Geelong Cup where applicable.
+`src/casual_invoice` separates configuration validation, calendar resolution, PDF generation, email composition, SQLite state, Gmail OAuth and private AWS storage. `Decimal` handles currency and `zoneinfo` handles Melbourne dates. Site overrides win over global overrides. Unknown calendar years fail closed. Regional holiday configuration replaces Melbourne Cup with Geelong Cup where applicable.
 
 Five dynamic PDF fields are replaced; all other content is preserved. PDF tests compare rendered pixels outside those fields. Filenames use a configurable prefix, billing month and year. Gmail operations save a frozen MIME payload and durable intent before the remote request. Ambiguous outcomes require reconciliation; they never trigger blind duplicate creation. Deleted-draft recreation requires explicit user confirmation.
 

@@ -4,9 +4,9 @@ from email import policy
 from email.parser import BytesParser
 from pathlib import Path
 import pytest
-from cleaning_invoice.configuration import load_config
-from cleaning_invoice.gmail_service import GmailDrafts, ReconciliationRequired, draft_invoice, oauth_service
-from cleaning_invoice.invoice_ledger import Ledger
+from casual_invoice.configuration import load_config
+from casual_invoice.gmail_service import GmailDrafts, ReconciliationRequired, draft_invoice, oauth_service
+from casual_invoice.invoice_ledger import Ledger
 from conftest import example_config
 
 

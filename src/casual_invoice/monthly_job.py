@@ -80,7 +80,7 @@ def run(config, output="output", now=None, ledger=None, gmail=None, sns=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Local cleaning invoice previews and mock workflow; never sends email")
+    parser = argparse.ArgumentParser(description="Local casual services invoice previews and mock workflow; never sends email")
     parser.add_argument("--config", default="config.json")
     parser.add_argument("--output", default="output")
     parser.add_argument("--mock-workflow", action="store_true")

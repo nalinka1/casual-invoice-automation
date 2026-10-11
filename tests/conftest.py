@@ -11,8 +11,8 @@ def example_config(tmp_path):
     source.parent.mkdir(exist_ok=True)
     with pymupdf.open() as doc:
         page = doc.new_page(width=596.04, height=842.52)
-        for text, point in [("Example Cleaner", (54, 110)), ("INVOICE NO: 11", (432, 126)), ("DATE: 05/09/2026", (432, 145)),
-                            ("Cleaning - Site One", (60, 368)), ("714", (444, 368)), ("Cleaning - Site Two", (60, 411)),
+        for text, point in [("Example Service Provider", (54, 110)), ("INVOICE NO: 11", (432, 126)), ("DATE: 05/09/2026", (432, 145)),
+                            ("Casual Services - Site One", (60, 368)), ("714", (444, 368)), ("Casual Services - Site Two", (60, 411)),
                             ("850.5", (444, 411)), ("TOTAL", (340, 683)), ("1564.5", (444, 683)), ("Example payment details", (72, 730))]:
             page.insert_text(point, text, fontsize=9.96)
         page.draw_rect(pymupdf.Rect(52, 298, 544, 690))

@@ -31,7 +31,7 @@
       "Type": "AWS::Lambda::Function",
       "Properties": {
         "FunctionName": {"Fn::Sub": "${AWS::StackName}-job"}, "Runtime": "python3.12", "Architectures": ["x86_64"],
-        "Handler": "cleaning_invoice.cloud_job.handler", "MemorySize": 512, "Timeout": 180,
+        "Handler": "casual_invoice.cloud_job.handler", "MemorySize": 512, "Timeout": 180,
         "Role": {"Fn::GetAtt": ["FunctionRole", "Arn"]},
         "Code": {"S3Bucket": {"Ref": "PrivateBucket"}, "S3Key": {"Ref": "CodeKey"}},
         "Environment": {"Variables": {"PRIVATE_BUCKET": {"Ref": "PrivateBucket"}, "LEDGER_TABLE": {"Ref": "LedgerTable"}, "GMAIL_SECRET": {"Ref": "GmailSecret"}, "NOTIFICATION_TOPIC": {"Ref": "Topic"}}},

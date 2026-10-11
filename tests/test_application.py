@@ -6,14 +6,14 @@ from decimal import Decimal
 from pathlib import Path
 import pymupdf
 import pytest
-from cleaning_invoice.configuration import load_config, validate, address
-from cleaning_invoice.calendar_rules import billable_dates, previous_month, local_date
-from cleaning_invoice.invoice_generator import calculate, total, generate_pdf, fields, invoice_filename
-from cleaning_invoice.email_service import content, message, MockGmail
-from cleaning_invoice.invoice_ledger import Ledger
-from cleaning_invoice.notifications import MockSNS
-from cleaning_invoice.monthly_job import run
-from cleaning_invoice.run_monitor import check
+from casual_invoice.configuration import load_config, validate, address
+from casual_invoice.calendar_rules import billable_dates, previous_month, local_date
+from casual_invoice.invoice_generator import calculate, total, generate_pdf, fields, invoice_filename
+from casual_invoice.email_service import content, message, MockGmail
+from casual_invoice.invoice_ledger import Ledger
+from casual_invoice.notifications import MockSNS
+from casual_invoice.monthly_job import run
+from casual_invoice.run_monitor import check
 
 ROOT = Path(__file__).resolve().parents[1]
 NOW = datetime(2026, 10, 5, 0, tzinfo=timezone.utc)
@@ -124,7 +124,7 @@ def test_email_exact_content_and_attachment(workflow, tmp_path):
     c, ledger, gmail, sns = workflow
     charges = calculate(c, 2026, 8)
     subject, body = content(c, 2026, 8, charges)
-    assert subject == "August 2026, Month Cleaning Invoice"
+    assert subject == "August 2026, Month Casual Services Invoice"
     assert body == c["email"]["body_template"].format(month_name="August", year=2026, corrections_days=21, vision_days=21)
     pdf = generate_pdf(c, charges, 12, NOW.date(), tmp_path / "a.pdf")
     msg = message(c, 2026, 8, charges, pdf)
@@ -161,7 +161,7 @@ def test_missing_run_without_job(workflow):
 
 
 def test_failure_and_recovery(workflow, tmp_path, monkeypatch):
-    import cleaning_invoice.monthly_job as job
+    import casual_invoice.monthly_job as job
     c, ledger, gmail, sns = workflow
     original = job.generate_pdf
     def fail(*args):

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from botocore.exceptions import ClientError
 import pytest
-from cleaning_invoice.cloud_job import CloudJob
+from casual_invoice.cloud_job import CloudJob
 
 NOW = datetime(2026, 11, 3, 10, tzinfo=timezone.utc)
 
@@ -137,7 +137,7 @@ def test_cloud_failed_notification_recovery(config, tmp_path, job):
 
 
 def test_manual_cloud_confirmation_requires_matching_number():
-    from cleaning_invoice.cloud_state import confirm_sent
+    from casual_invoice.cloud_state import confirm_sent
     class Table:
         def update_item(self, **kwargs):
             assert kwargs["Key"] == {"pk": "month#2026-10"}

@@ -6,7 +6,7 @@ This platform converts a previous calendar month's service dates into a template
 
 This document describes the implementation at the October 2026 acceptance milestone. It supports code review and interview discussion; it is not a claim of general-purpose accounting functionality or measured production throughput. Source links are authoritative for behavior. Deployment evidence is summarized in [acceptance testing](ACCEPTANCE_TEST.md); private identifiers and credentials are excluded.
 
-The professional platform name is a documentation name. The existing Python package, CLI names, operation headers, and infrastructure identifiers retain their original names for compatibility. No package migration is implied.
+The Python package is `casual_invoice`, with `casual-invoice` and `casual-invoice-gmail` CLI entry points. The persisted legacy operation header remains compatible with existing drafts. Deployed AWS resource names are independent of the package name and are not renamed by a local source change. See [rename and deployment notes](RENAMING.md).
 
 | View | Review question |
 |---|---|
@@ -94,7 +94,7 @@ sequenceDiagram
   Note over L,G: On uncertain create, find operation header in drafts<br/>Require exactly one match, otherwise stop for human review
 ```
 
-[`CloudJob.generate`](../src/cleaning_invoice/cloud_job.py) is an orchestration function with several service boundaries, not a transaction spanning AWS and Google. A DynamoDB transaction makes number reservation atomic; S3 uploads, Gmail creation, and SNS publication each commit independently.
+[`CloudJob.generate`](../src/casual_invoice/cloud_job.py) is an orchestration function with several service boundaries, not a transaction spanning AWS and Google. A DynamoDB transaction makes number reservation atomic; S3 uploads, Gmail creation, and SNS publication each commit independently.
 
 The durable `creating` marker is written before the Gmail POST. A second invocation cannot simply issue another POST for that operation. Reconciliation inspects draft MIME headers for the operation UUID. Zero matches can mean the first request never succeeded, is still in flight, or the draft was sent or removed; multiple matches are also ambiguous. The application stops instead of guessing. This favors duplicate prevention over automatic recovery.
 
@@ -110,7 +110,7 @@ Frozen MIME protects retries from newly edited rates, addresses, or template con
 | `month#YYYY-MM` | Billing month, reserved number, business status, preparation phase, operation ID, PDF/MIME keys, PDF checksum, dates/totals summary, draft ID, timestamps |
 | `event#<event-key>` | Notification claim status and creation timestamp; publication completion marker |
 
-The table has one string partition key and no secondary index. [`DynamoLedger.reserve`](../src/cleaning_invoice/aws_storage.py) performs strongly consistent reads and a conditional transaction updating the counter and inserting the month row. Repeating a month reuses its number. Failed reservations are retained rather than silently recycled. Allocation order follows execution order, not necessarily billing-month order when backfills are involved.
+The table has one string partition key and no secondary index. [`DynamoLedger.reserve`](../src/casual_invoice/aws_storage.py) performs strongly consistent reads and a conditional transaction updating the counter and inserting the month row. Repeating a month reuses its number. Failed reservations are retained rather than silently recycled. Allocation order follows execution order, not necessarily billing-month order when backfills are involved.
 
 ```mermaid
 stateDiagram-v2
@@ -134,7 +134,7 @@ stateDiagram-v2
 
 Business `status` and technical `phase` are separate fields. Failure can coexist with a prepared, creating, or done phase. A failed notification can leave a successfully created draft with a failed business status; generation restores awaiting approval for a done row without creating a new draft.
 
-[`cloud_state.confirm_sent`](../src/cleaning_invoice/cloud_state.py) requires a matching invoice number, an existing draft ID, and an awaiting/failed status. It records explicit human evidence. It does not verify delivery in Gmail or provide accounting reconciliation. Draft disappearance is never treated as proof of sending in the hosted workflow.
+[`cloud_state.confirm_sent`](../src/casual_invoice/cloud_state.py) requires a matching invoice number, an existing draft ID, and an awaiting/failed status. It records explicit human evidence. It does not verify delivery in Gmail or provide accounting reconciliation. Draft disappearance is never treated as proof of sending in the hosted workflow.
 
 ### Consistency boundaries to review
 
@@ -186,7 +186,7 @@ The implementation requires exactly two hard-coded site IDs in template order. E
 
 ### PDF and email contract
 
-[`invoice_generator.py`](../src/cleaning_invoice/invoice_generator.py) keeps source page one and replaces five fields: invoice number, issue date, two site amounts, and total. Field discovery uses known source text and character geometry. Labels, static identities, and other source content remain unchanged; static business details belong to the private template. Embedded Arial is reused when available, with Helvetica fallback. Width validation rejects overflowing values. This preserves visual fidelity but couples the renderer to one verified template.
+[`invoice_generator.py`](../src/casual_invoice/invoice_generator.py) keeps source page one and replaces five fields: invoice number, issue date, two site amounts, and total. Field discovery uses known source text and character geometry. Labels, static identities, and other source content remain unchanged; static business details belong to the private template. Embedded Arial is reused when available, with Helvetica fallback. Width validation rejects overflowing values. This preserves visual fidelity but couples the renderer to one verified template.
 
 The invoice date is the generation date; the filename and email refer to the billing month. No dedicated dynamic billing-period field is added to the PDF. Email composition attaches a PDF using the standard-library MIME API. The cloud stores serialized MIME before remote creation, enabling replay of the exact attachment.
 

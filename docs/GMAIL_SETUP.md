@@ -17,7 +17,7 @@ Install optional dependencies:
 Connect interactively:
 
 ```powershell
-.\.venv\Scripts\python.exe -m cleaning_invoice.gmail_service connect
+.\.venv\Scripts\python.exe -m casual_invoice.gmail_service connect
 ```
 
 A browser consent window opens. Select **draft@example.com**, review and approve the requested access. The program verifies the authorized Gmail profile before saving `.secrets/gmail-token.json`. Choosing a different account fails. This command creates no draft. Do not share the token file.
@@ -29,7 +29,7 @@ The requested `gmail.compose` scope permits managing drafts **and sending** acco
 While running in October 2026:
 
 ```powershell
-.\.venv\Scripts\python.exe -m cleaning_invoice.gmail_service draft
+.\.venv\Scripts\python.exe -m casual_invoice.gmail_service draft
 ```
 
 This bills the previous Melbourne calendar month, uses the configured real recipient, reserves number 12 in a dedicated `output/gmail/gmail-ledger.sqlite`, and attaches the generated PDF. Open Gmail Drafts in the verified account to review and **manually send**. Reruns use the saved draft ID; they do not update the draft or create another one. Mock state in `output/mock` is separate and does not count as issuance. Do not create a second Gmail ledger for the same real billing scope.
@@ -43,7 +43,7 @@ When the user explicitly confirms a saved draft was deleted **without sending**,
 A durable operation marker and frozen MIME payload are stored before calling Gmail. Automatic retries on draft-create POST are disabled. If a timeout or interruption leaves the outcome uncertain, automatic recreation is blocked. Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m cleaning_invoice.gmail_service draft --reconcile
+.\.venv\Scripts\python.exe -m casual_invoice.gmail_service draft --reconcile
 ```
 
 This reads draft metadata/content to locate exactly one draft with the operation header, including pagination. It adopts that ID without another create request. If none or multiple match, it stays blocked: inspect Drafts and Sent manually. Missing draft is not sending evidence. If preparation stops before the database commit and leaves an unexpected PDF, inspect it before recovery; it will not silently overwrite the file. Database loss cannot be recovered automatically; back up private durable state.

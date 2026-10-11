@@ -2,7 +2,7 @@ import io
 import json
 from pathlib import Path
 import pytest
-from cleaning_invoice.aws_storage import DynamoLedger, get_config
+from casual_invoice.aws_storage import DynamoLedger, get_config
 
 
 def test_s3_input_is_validated_and_downloaded(config, tmp_path):

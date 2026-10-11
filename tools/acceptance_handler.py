@@ -5,8 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 import boto3
-from cleaning_invoice.aws_storage import get_config
-from cleaning_invoice.cloud_job import CloudJob
+from casual_invoice.aws_storage import get_config
+from casual_invoice.cloud_job import CloudJob
 
 
 class PrefixedS3:

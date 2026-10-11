@@ -144,7 +144,7 @@ def draft_invoice(config, output, ledger, gmail, now=None, reconcile=False, recr
             generate_pdf(config, charges, row["number"], local_date(now, config["timezone"]), pdf)
             msg = message(config, year, month, charges, pdf)
             msg["X-Cleaning-Invoice-Operation"] = operation_id
-            msg["Message-ID"] = f"<{operation_id}@cleaning-invoice.local>"
+            msg["Message-ID"] = f"<{operation_id}@casual-invoice.local>"
             raw = msg.as_bytes(policy=policy.SMTP)
             ledger.db.execute("INSERT INTO gmail_operations VALUES (?, ?, 'prepared', ?, NULL, ?)", (key, operation_id, raw, gmail.account))
             summary = {"billing_month": key, "site_days": {s.site_id: len(s.dates) for s in charges}, "total": str(total(charges))}
@@ -173,7 +173,7 @@ def draft_invoice(config, output, ledger, gmail, now=None, reconcile=False, recr
             attachments[0].set_param("filename", filename, header="Content-Disposition")
             operation_id = uuid.uuid4().hex
             parsed.replace_header("X-Cleaning-Invoice-Operation", operation_id)
-            parsed.replace_header("Message-ID", f"<{operation_id}@cleaning-invoice.local>")
+            parsed.replace_header("Message-ID", f"<{operation_id}@casual-invoice.local>")
             ledger.db.execute("CREATE TABLE IF NOT EXISTS gmail_operation_history (operation_id TEXT PRIMARY KEY, month TEXT, draft_id TEXT, raw BLOB, replaced TEXT)")
             ledger.db.execute("INSERT INTO gmail_operation_history VALUES (?, ?, ?, ?, ?)",
                               (operation["operation_id"], key, operation["draft_id"], operation["raw"], stamp))

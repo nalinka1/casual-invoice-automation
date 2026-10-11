@@ -34,13 +34,13 @@
   "sites": [
     {
       "id": "corrections_north_geelong",
-      "description": "Cleaning - Site One",
+      "description": "Casual Services - Site One",
       "daily_rate_aud": "34.00",
       "rate_status": "confirmed_by_user_2026-10-11"
     },
     {
       "id": "vision_australia_geelong",
-      "description": "Cleaning - Site Two",
+      "description": "Casual Services - Site Two",
       "daily_rate_aud": "40.50",
       "rate_status": "confirmed_by_user_2026-10-11"
     }
@@ -74,8 +74,8 @@
   "email": {
     "to": "client@example.com",
     "mode": "draft_for_review",
-    "subject_template": "{month_name} {year}, Month Cleaning Invoice",
-    "body_template": "Hi,\n\nPlease find the {month_name} month/{year} invoice attached herewith.\n\nCleaning - Site One - {corrections_days} Days\nCleaning - Site Two - {vision_days} Days\n\n\nThank you & Best Regards,\nExample Cleaner",
+    "subject_template": "{month_name} {year}, Month Casual Services Invoice",
+    "body_template": "Hi,\n\nPlease find the {month_name} month/{year} invoice attached herewith.\n\nCasual Services - Site One - {corrections_days} Days\nCasual Services - Site Two - {vision_days} Days\n\n\nThank you & Best Regards,\nExample Service Provider",
     "draft_account_email": "draft@example.com",
     "draft_provider": "gmail",
     "approval_method": "manual_send_from_gmail_drafts",
