@@ -1,0 +1,67 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Invoice draft Lambda, SNS alerts and Melbourne schedules; disabled until acceptance",
+  "Parameters": {
+    "PrivateBucket": {"Type": "String"},
+    "LedgerTable": {"Type": "String"},
+    "GmailSecret": {"Type": "String"},
+    "CodeKey": {"Type": "String"},
+    "NotificationEmail": {"Type": "String", "NoEcho": true},
+    "ScheduleState": {"Type": "String", "Default": "DISABLED", "AllowedValues": ["DISABLED", "ENABLED"]}
+  },
+  "Resources": {
+    "Topic": {"Type": "AWS::SNS::Topic"},
+    "EmailSubscription": {"Type": "AWS::SNS::Subscription", "Properties": {"TopicArn": {"Ref": "Topic"}, "Protocol": "email", "Endpoint": {"Ref": "NotificationEmail"}}},
+    "DeadLetterQueue": {"Type": "AWS::SQS::Queue", "Properties": {"MessageRetentionPeriod": 1209600, "SqsManagedSseEnabled": true}},
+    "FunctionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]},
+        "Policies": [{"PolicyName": "InvoiceResourcesOnly", "PolicyDocument": {"Version": "2012-10-17", "Statement": [
+          {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject"], "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::${PrivateBucket}/*"}},
+          {"Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Scan", "dynamodb:TransactWriteItems"], "Resource": {"Fn::Sub": "arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${LedgerTable}"}},
+          {"Effect": "Allow", "Action": ["secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"], "Resource": {"Ref": "GmailSecret"}},
+          {"Effect": "Allow", "Action": "sns:Publish", "Resource": {"Ref": "Topic"}},
+          {"Effect": "Allow", "Action": "sqs:SendMessage", "Resource": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]}},
+          {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": {"Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-job:*"}}
+        ]}}]
+      }
+    },
+    "InvoiceFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {"Fn::Sub": "${AWS::StackName}-job"}, "Runtime": "python3.12", "Architectures": ["x86_64"],
+        "Handler": "cleaning_invoice.cloud_job.handler", "MemorySize": 512, "Timeout": 180,
+        "Role": {"Fn::GetAtt": ["FunctionRole", "Arn"]},
+        "Code": {"S3Bucket": {"Ref": "PrivateBucket"}, "S3Key": {"Ref": "CodeKey"}},
+        "Environment": {"Variables": {"PRIVATE_BUCKET": {"Ref": "PrivateBucket"}, "LEDGER_TABLE": {"Ref": "LedgerTable"}, "GMAIL_SECRET": {"Ref": "GmailSecret"}, "NOTIFICATION_TOPIC": {"Ref": "Topic"}}},
+        "DeadLetterConfig": {"TargetArn": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]}}
+      }
+    },
+    "LogGroup": {"Type": "AWS::Logs::LogGroup", "Properties": {"LogGroupName": {"Fn::Sub": "/aws/lambda/${AWS::StackName}-job"}, "RetentionInDays": 14}},
+    "InvokeConfig": {"Type": "AWS::Lambda::EventInvokeConfig", "Properties": {"FunctionName": {"Ref": "InvoiceFunction"}, "Qualifier": "$LATEST", "MaximumRetryAttempts": 1, "MaximumEventAgeInSeconds": 3600}},
+    "SchedulerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "scheduler.amazonaws.com"}, "Action": "sts:AssumeRole", "Condition": {"StringEquals": {"aws:SourceAccount": {"Ref": "AWS::AccountId"}}}}]},
+        "Policies": [{"PolicyName": "InvokeInvoiceOnly", "PolicyDocument": {"Version": "2012-10-17", "Statement": [
+          {"Effect": "Allow", "Action": "lambda:InvokeFunction", "Resource": {"Fn::GetAtt": ["InvoiceFunction", "Arn"]}},
+          {"Effect": "Allow", "Action": "sqs:SendMessage", "Resource": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]}}
+        ]}}]
+      }
+    },
+    "MonthlySchedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Properties": {"State": {"Ref": "ScheduleState"}, "ScheduleExpression": "cron(0 21 3 * ? *)", "ScheduleExpressionTimezone": "Australia/Melbourne", "FlexibleTimeWindow": {"Mode": "OFF"},
+        "Target": {"Arn": {"Fn::GetAtt": ["InvoiceFunction", "Arn"]}, "RoleArn": {"Fn::GetAtt": ["SchedulerRole", "Arn"]}, "Input": "{\"action\":\"generate\"}", "RetryPolicy": {"MaximumRetryAttempts": 1, "MaximumEventAgeInSeconds": 3600}, "DeadLetterConfig": {"Arn": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]}}}}
+    },
+    "MonitorSchedule": {
+      "Type": "AWS::Scheduler::Schedule",
+      "Properties": {"State": {"Ref": "ScheduleState"}, "ScheduleExpression": "cron(15 21 * * ? *)", "ScheduleExpressionTimezone": "Australia/Melbourne", "FlexibleTimeWindow": {"Mode": "OFF"},
+        "Target": {"Arn": {"Fn::GetAtt": ["InvoiceFunction", "Arn"]}, "RoleArn": {"Fn::GetAtt": ["SchedulerRole", "Arn"]}, "Input": "{\"action\":\"monitor\"}", "RetryPolicy": {"MaximumRetryAttempts": 1, "MaximumEventAgeInSeconds": 3600}, "DeadLetterConfig": {"Arn": {"Fn::GetAtt": ["DeadLetterQueue", "Arn"]}}}}
+    },
+    "LambdaErrorAlarm": {"Type": "AWS::CloudWatch::Alarm", "Properties": {"Namespace": "AWS/Lambda", "MetricName": "Errors", "Dimensions": [{"Name": "FunctionName", "Value": {"Ref": "InvoiceFunction"}}], "Statistic": "Sum", "Period": 300, "EvaluationPeriods": 1, "Threshold": 1, "ComparisonOperator": "GreaterThanOrEqualToThreshold", "TreatMissingData": "notBreaching", "AlarmActions": [{"Ref": "Topic"}]}},
+    "DeliveryFailureAlarm": {"Type": "AWS::CloudWatch::Alarm", "Properties": {"Namespace": "AWS/SQS", "MetricName": "ApproximateNumberOfMessagesVisible", "Dimensions": [{"Name": "QueueName", "Value": {"Fn::GetAtt": ["DeadLetterQueue", "QueueName"]}}], "Statistic": "Maximum", "Period": 300, "EvaluationPeriods": 1, "Threshold": 1, "ComparisonOperator": "GreaterThanOrEqualToThreshold", "TreatMissingData": "notBreaching", "AlarmActions": [{"Ref": "Topic"}]}}
+  },
+  "Outputs": {"FunctionName": {"Value": {"Ref": "InvoiceFunction"}}, "TopicArn": {"Value": {"Ref": "Topic"}}, "MonthlyScheduleName": {"Value": {"Ref": "MonthlySchedule"}}, "MonitorScheduleName": {"Value": {"Ref": "MonitorSchedule"}}}
+}

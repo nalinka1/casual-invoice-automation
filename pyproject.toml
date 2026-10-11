@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cleaning-invoice-automation"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["PyMuPDF>=1.24,<2", "tzdata>=2026.1"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+gmail = ["google-api-python-client>=2,<3", "google-auth-oauthlib>=1,<2"]
+aws = ["boto3>=1.35,<2"]
+
+[project.scripts]
+cleaning-invoice = "cleaning_invoice.monthly_job:main"
+cleaning-invoice-gmail = "cleaning_invoice.gmail_service:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+

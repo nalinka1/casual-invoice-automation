@@ -1,0 +1,136 @@
+{
+  "timezone": "Australia/Melbourne",
+  "billing_period": "previous_calendar_month",
+  "invoice_creation": "first_week_of_following_month",
+  "currency": "AUD",
+  "working_weekdays": [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday"
+  ],
+  "holiday_calendar": {
+    "jurisdiction": "City of Greater Geelong, Victoria, Australia",
+    "policy": "exclude_applicable_public_holidays_by_default",
+    "source_urls": [
+      "https://business.vic.gov.au/business-information/public-holidays/victorian-public-holidays-2026",
+      "https://business.vic.gov.au/business-information/public-holidays/victorian-non-metropolitan-public-holidays-2026"
+    ],
+    "2026_non_billable_public_holidays": {
+      "2026-01-01": "New Year's Day",
+      "2026-01-26": "Australia Day",
+      "2026-03-09": "Labour Day",
+      "2026-04-03": "Good Friday",
+      "2026-04-06": "Easter Monday",
+      "2026-06-08": "King's Birthday",
+      "2026-09-25": "Friday before AFL Grand Final",
+      "2026-10-21": "Geelong Cup (Greater Geelong substituted public holiday)",
+      "2026-12-25": "Christmas Day",
+      "2026-12-28": "Additional Boxing Day holiday"
+    },
+    "notes": "November 3 Melbourne Cup is NOT a public holiday in Greater Geelong for 2026; October 21 Geelong Cup is substituted. Weekend holidays may be omitted from this weekday-only exclusion list. Verify each new year's calendar before generating invoices."
+  },
+  "sites": [
+    {
+      "id": "corrections_north_geelong",
+      "description": "Cleaning - Site One",
+      "daily_rate_aud": "34.00",
+      "rate_status": "confirmed_by_user_2026-10-11"
+    },
+    {
+      "id": "vision_australia_geelong",
+      "description": "Cleaning - Site Two",
+      "daily_rate_aud": "40.50",
+      "rate_status": "confirmed_by_user_2026-10-11"
+    }
+  ],
+  "date_overrides": {
+    "global": {},
+    "by_site": {
+      "corrections_north_geelong": {},
+      "vision_australia_geelong": {}
+    }
+  },
+  "invoice": {
+    "source_pdf": "templates/example-invoice.pdf",
+    "source_invoice_page": 1,
+    "invoice_number_format": "integer",
+    "last_confirmed_issued_invoice_number": 11,
+    "number_status": "confirmed",
+    "invoice_date_format": "DD/MM/YYYY",
+    "date_rule": "actual_date_invoice_is_created",
+    "only_change": [
+      "invoice_number",
+      "invoice_date",
+      "amount_per_site",
+      "grand_total"
+    ],
+    "preserve_existing_identity_bank_details_recipient_and_layout": true,
+    "money_rounding": "Decimal rounded to 2 decimal places",
+    "tax_rule": "preserve_existing_invoice_tax_presentation; do not add tax without user confirmation",
+    "filename_prefix": "Example"
+  },
+  "email": {
+    "to": "client@example.com",
+    "mode": "draft_for_review",
+    "subject_template": "{month_name} {year}, Month Cleaning Invoice",
+    "body_template": "Hi,\n\nPlease find the {month_name} month/{year} invoice attached herewith.\n\nCleaning - Site One - {corrections_days} Days\nCleaning - Site Two - {vision_days} Days\n\n\nThank you & Best Regards,\nExample Cleaner",
+    "draft_account_email": "draft@example.com",
+    "draft_provider": "gmail",
+    "approval_method": "manual_send_from_gmail_drafts",
+    "oauth_scope": "https://www.googleapis.com/auth/gmail.compose",
+    "send_enabled": false
+  },
+  "aws": {
+    "account_id": null,
+    "region": "ap-southeast-2",
+    "account_login_email": null,
+    "note": "AWS account identity is separate from Gmail draft identity and SNS notification recipient; do not store AWS access keys in config."
+  },
+  "notifications": {
+    "provider": "aws_sns",
+    "recipient_email": "alerts@example.com",
+    "sns_topic_arn": null,
+    "success": true,
+    "failure": true,
+    "pending_draft_reminder_after_days": 2,
+    "missed_run_detection": true,
+    "include": [
+      "billing_month",
+      "invoice_number",
+      "status",
+      "gmail_draft_link_if_available"
+    ],
+    "exclude": [
+      "bank_details",
+      "oauth_tokens",
+      "invoice_pdf"
+    ]
+  },
+  "scheduling": {
+    "timezone": "Australia/Melbourne",
+    "monthly_day_of_month": 3,
+    "monthly_day_status": "confirmed_by_user_2026-10-11",
+    "local_time": "21:00",
+    "local_time_status": "confirmed_by_user_2026-10-11",
+    "trigger": "EventBridge Scheduler",
+    "missed_run_check_day_of_month": 6,
+    "missed_run_check_status": "proposed_not_confirmed",
+    "monitoring_requires_independent_scheduled_check": true
+  },
+  "execution_state": {
+    "storage": "DynamoDB for hosted production; local JSON or SQLite for development",
+    "deduplication_key": "billing_month",
+    "statuses": [
+      "scheduled",
+      "running",
+      "draft_created",
+      "awaiting_approval",
+      "sent_confirmed",
+      "failed"
+    ],
+    "invoice_number_reservation": "atomic_and_durable",
+    "reminders": "idempotent_per_billing_month_and_reminder_window"
+  }
+}
