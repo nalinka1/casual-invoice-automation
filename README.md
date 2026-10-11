@@ -1,6 +1,6 @@
-# Cleaning Invoice Automation
+# Casual Services Invoice Automation Platform
 
-Deterministic Python 3.12+ billing for two cleaning sites: regional business-day calendars, leave overrides, Decimal arithmetic, a preserved PDF template, and Gmail drafts for manual sending.
+Deterministic Python 3.12+ billing for two service sites: regional business-day calendars, leave overrides, Decimal arithmetic, a preserved PDF template, and Gmail drafts for manual sending.
 
 ## Local development
 
@@ -9,6 +9,8 @@ Create a virtual environment and install `pip install -e ".[test,gmail,aws]"`. R
 Copy `config.example.json` to the ignored `config.json`, supply your own private PDF and settings, and run `cleaning-invoice` for a local preview. Invoice numbers in previews are unreserved. Use `cleaning-invoice-gmail connect` and then `cleaning-invoice-gmail draft` for explicit Gmail draft creation. Sending is always manual.
 
 ## Architecture
+
+See the [advanced architecture and developer review](docs/ARCHITECTURE.md) for system diagrams, execution and state models, security boundaries, performance measurement plans, and a prioritized review backlog. The professional project name is used in documentation; existing package and command names remain compatible.
 
 `src/cleaning_invoice` separates configuration validation, calendar resolution, PDF generation, email composition, SQLite state, Gmail OAuth and private AWS storage. `Decimal` handles currency and `zoneinfo` handles Melbourne dates. Site overrides win over global overrides. Unknown calendar years fail closed. Regional holiday configuration replaces Melbourne Cup with Geelong Cup where applicable.
 
