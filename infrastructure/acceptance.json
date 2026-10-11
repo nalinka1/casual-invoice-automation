@@ -1,0 +1,31 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Temporary isolated test ledger and manual Lambda; no schedules or invoice sending",
+  "Parameters": {
+    "Bucket": {"Type": "String"}, "Prefix": {"Type": "String", "AllowedPattern": "acceptance/[a-f0-9]+/"},
+    "CodeKey": {"Type": "String"}, "GmailSecret": {"Type": "String"}, "Topic": {"Type": "String"}
+  },
+  "Resources": {
+    "TestLedger": {"Type": "AWS::DynamoDB::Table", "Properties": {"BillingMode": "PAY_PER_REQUEST", "AttributeDefinitions": [{"AttributeName": "pk", "AttributeType": "S"}], "KeySchema": [{"AttributeName": "pk", "KeyType": "HASH"}], "SSESpecification": {"SSEEnabled": true}}},
+    "TestRole": {"Type": "AWS::IAM::Role", "Properties": {
+      "AssumeRolePolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]},
+      "Policies": [{"PolicyName": "IsolatedAcceptance", "PolicyDocument": {"Version": "2012-10-17", "Statement": [
+        {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject"], "Resource": {"Fn::Sub": "arn:${AWS::Partition}:s3:::${Bucket}/${Prefix}*"}},
+        {"Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:TransactWriteItems"], "Resource": {"Fn::GetAtt": ["TestLedger", "Arn"]}},
+        {"Effect": "Allow", "Action": ["secretsmanager:GetSecretValue", "secretsmanager:PutSecretValue"], "Resource": {"Ref": "GmailSecret"}},
+        {"Effect": "Allow", "Action": "sns:Publish", "Resource": {"Ref": "Topic"}},
+        {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"], "Resource": {"Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-test:*"}}
+      ]}}]}},
+    "TestFunction": {"Type": "AWS::Lambda::Function", "Properties": {
+      "FunctionName": {"Fn::Sub": "${AWS::StackName}-test"}, "Runtime": "python3.12", "Handler": "acceptance_handler.handler", "MemorySize": 512, "Timeout": 180,
+      "Role": {"Fn::GetAtt": ["TestRole", "Arn"]}, "Code": {"S3Bucket": {"Ref": "Bucket"}, "S3Key": {"Ref": "CodeKey"}},
+      "Environment": {"Variables": {"PRIVATE_BUCKET": {"Ref": "Bucket"}, "TEST_PREFIX": {"Ref": "Prefix"}, "TEST_LEDGER": {"Ref": "TestLedger"}, "GMAIL_SECRET": {"Ref": "GmailSecret"}, "NOTIFICATION_TOPIC": {"Ref": "Topic"}}}
+    }},
+    "TestLogGroup": {"Type": "AWS::Logs::LogGroup", "Properties": {"LogGroupName": {"Fn::Sub": "/aws/lambda/${AWS::StackName}-test"}, "RetentionInDays": 1}},
+    "TestSchedulerRole": {"Type": "AWS::IAM::Role", "Properties": {
+      "AssumeRolePolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "scheduler.amazonaws.com"}, "Action": "sts:AssumeRole", "Condition": {"StringEquals": {"aws:SourceAccount": {"Ref": "AWS::AccountId"}}}}]},
+      "Policies": [{"PolicyName": "InvokeTestOnly", "PolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "lambda:InvokeFunction", "Resource": {"Fn::GetAtt": ["TestFunction", "Arn"]}}]}}]
+    }}
+  },
+  "Outputs": {"Function": {"Value": {"Ref": "TestFunction"}}, "FunctionArn": {"Value": {"Fn::GetAtt": ["TestFunction", "Arn"]}}, "SchedulerRole": {"Value": {"Fn::GetAtt": ["TestSchedulerRole", "Arn"]}}, "Table": {"Value": {"Ref": "TestLedger"}}}
+}

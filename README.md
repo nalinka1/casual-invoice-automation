@@ -22,7 +22,7 @@ See [AWS setup](docs/AWS_SETUP.md) and [Gmail setup](docs/GMAIL_SETUP.md). Stora
 
 ## Validation and limits
 
-Current verification: **50 offline tests pass**. Private storage and the Lambda/SNS runtime have been deployed by the operator; Lambda's read-only health check verified configuration, ledger and Gmail access. After OAuth reauthorization and SNS subscription confirmation, monthly and monitor schedules were enabled and verified in Australia/Melbourne. Scheduled invocation itself has not yet occurred. The repository has not been published. Private resource identifiers and operational notes are stored outside public source.
+Current verification: **53 offline tests pass**. Private storage and the Lambda/SNS runtime are deployed; the hosted health check verified configuration, ledger and Gmail access. Monthly and monitor schedules are enabled in Australia/Melbourne. An isolated one-time schedule successfully exercised synthetic PDF generation, Gmail attachment creation, notification publish and same-draft retry without changing production numbering. The recurring production schedule has not yet reached its first run. See [acceptance testing](docs/ACCEPTANCE_TEST.md). Repository visibility is unchanged; personal resource identifiers and operational notes stay outside public source.
 
 Automated tests cover regional calendars, leave, timezone rollover, monetary calculations, invalid configuration, synthetic PDF fidelity, concurrent SQLite numbering, draft retries, mock monitoring and explicit deleted-draft recovery. Live mail and cloud acceptance are recorded only in private operator notes.
 
